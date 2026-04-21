@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>하루타로</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
+
+    :root {
+      --bg: #0d0618;
+      --surface: #1a0d2e;
+      --surface2: #231240;
+      --primary: #7c3aed;
+      --primary-light: #a855f7;
+      --gold: #f59e0b;
+      --gold-light: #fcd34d;
+      --text: #f3f0ff;
+      --muted: #9d8ec4;
+      --line: #2d1a4a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .app {
+      max-width: 420px;
+      margin: 0 auto;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* ===== 메인 화면 ===== */
+    #mainScreen {
+      padding: 60px 24px 120px;
+      text-align: center;
+      display: none;
+    }
+    #mainScreen.active {
+      display: block;
+    }
+
+    .orb {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #a855f7, #4c1d95);
+      box-shadow: 0 0 40px rgba(124,58,237,0.5), 0 0 80px rgba(124,58,237,0.2);
+      margin: 0 auto 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      animation: orbPulse 3s ease-in-out infinite;
+    }
+    @keyframes orbPulse {
+      0%,100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .main-title {
+      font-family: 'Noto Serif KR', serif;
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+    .main-subtitle {
+      font-size: 15px;
+      color: var(--muted);
+      margin-bottom: 40px;
+    }
+
+    .already-picked {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    .already-card-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--gold);
+      margin-bottom: 6px;
+    }
+    .already-card-reading {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .next-time {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    .btn {
+      width: 100%;
+      border: 0;
+      border-radius: 14px;
+      height: 52px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: 'Noto Sans KR', sans-serif;
+      transition: all 0.15s;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(124,58,237,0.4);
+    }
+    .btn-secondary {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--line);
+      margin-top: 12px;
+    }
+    .btn-gold {
+      background: linear-gradient(135deg, #d97706, var(--gold));
+      color: #1c1000;
+      font-weight: 700;
+      box-shadow: 0 4px 20px rgba(245,158,11,0.35);
+    }
+
+    /* ===== 카드 선택 화면 ===== */
+    #pickScreen {
+      padding: 32px 0 100px;
+    }
+
+    .pick-header {
+      text-align: center;
+      padding: 0 24px 32px;
+    }
+    .pick-title {
+      font-family: 'Noto Serif KR', serif;
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .pick-sub {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* 부채꼴 카드 */
+    .fan-container {
+      position: relative;
+      width: 100%;
+      height: 300px;
+      overflow: hidden;
+    }
+
+    .fan-stage {
+      position: absolute;
+      bottom: -280px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 700px;
+      height: 700px;
+    }
+
+    .fan-card {
+      position: absolute;
+      width: 110px;
+      height: 175px;
+      bottom: 280px;
+      left: 50%;
+      margin-left: -55px;
+      transform-origin: center bottom;
+      cursor: pointer;
+      border: none;
+      background: none;
+      padding: 0;
+    }
+
+    .fan-card-face {
+      width: 100%;
+      height: 100%;
+      border-radius: 14px;
+      background: linear-gradient(160deg, #3d1580 0%, #6d28d9 50%, #3d1580 100%);
+      border: 1.5px solid rgba(168,85,247,0.5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+      position: relative;
+      transition: all 0.2s;
+      gap: 8px;
+    }
+
+    .fan-card-face::before {
+      content: '';
+      position: absolute;
+      inset: 7px;
+      border-radius: 9px;
+      border: 1px solid rgba(168,85,247,0.2);
+    }
+
+    .fan-card-face .star-icon {
+      font-size: 32px;
+      color: rgba(245,158,11,0.55);
+    }
+
+    .fan-card.active .fan-card-face {
+      background: linear-gradient(160deg, #5b21b6 0%, #7c3aed 50%, #5b21b6 100%);
+      border-color: var(--gold);
+      box-shadow: 0 10px 32px rgba(124,58,237,0.8), 0 0 24px rgba(245,158,11,0.4);
+      transform: translateY(-16px) scale(1.05);
+    }
+
+    .fan-card.active .star-icon {
+      color: var(--gold);
+    }
+
+    .swipe-hint {
+      text-align: center;
+      padding: 12px 24px 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* ===== 결과 화면 ===== */
+    #resultScreen {
+      padding: 40px 24px 120px;
+    }
+
+    .result-card-icon {
+      width: 120px;
+      height: 190px;
+      border-radius: 14px;
+      background: linear-gradient(160deg, #1a0a2e, #2d1060);
+      border: 2px solid var(--gold);
+      margin: 0 auto 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 40px rgba(245,158,11,0.4), 0 0 80px rgba(124,58,237,0.2);
+      animation: cardReveal 0.4s ease-out;
+      padding: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+    .result-card-icon::before {
+      content: '';
+      position: absolute;
+      inset: 6px;
+      border-radius: 10px;
+      border: 1px solid rgba(168,85,247,0.2);
+    }
+    .result-card-icon svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    @keyframes cardReveal {
+      from { opacity: 0; transform: scale(0.8) rotateY(40deg); }
+      to { opacity: 1; transform: scale(1) rotateY(0); }
+    }
+    @keyframes drawLine {
+      from { stroke-dashoffset: var(--len); }
+      to { stroke-dashoffset: 0; }
+    }
+
+    .result-roman {
+      font-family: 'Noto Serif KR', serif;
+      font-size: 13px;
+      color: rgba(245,158,11,0.5);
+      text-align: center;
+      letter-spacing: 0.15em;
+      margin-bottom: 6px;
+    }
+    .result-name {
+      font-family: 'Noto Serif KR', serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--gold);
+      text-align: center;
+      margin-bottom: 4px;
+    }
+    .result-english {
+      font-size: 13px;
+      color: var(--muted);
+      text-align: center;
+      margin-bottom: 24px;
+      letter-spacing: 0.08em;
+    }
+
+    .result-box {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 12px;
+    }
+
+    .short-reading {
+      font-size: 16px;
+      line-height: 1.7;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .detail-reading {
+      font-size: 14px;
+      line-height: 1.8;
+      color: #c4b5fd;
+      display: none;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+    }
+    .detail-reading.visible { display: block; }
+
+    .banner-wrap {
+      width: 100%;
+      min-height: 96px;
+      margin: 12px 0;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 12px;
+      background: var(--surface);
+      border: 1px dashed var(--line);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: var(--surface2);
+      border: 1px solid var(--line);
+      color: var(--text);
+      padding: 12px 24px;
+      border-radius: 100px;
+      font-size: 14px;
+      font-weight: 500;
+      opacity: 0;
+      transition: all 0.25s;
+      z-index: 100;
+      white-space: nowrap;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+
+    <!-- 메인 화면 -->
+    <section id="mainScreen" class="screen active">
+      <div class="orb">★</div>
+      <h1 class="main-title">지금 이 순간,<br>당신의 연애운은?</h1>
+      <p class="main-subtitle">마음이 이끄는 카드를 선택해보세요</p>
+      <div id="alreadyPickedBox" style="display:none" class="already-picked">
+        <div class="already-card-name" id="todayCardName"></div>
+        <div class="already-card-reading" id="todayCardReading"></div>
+        <div class="next-time">내일 자정에 새 카드를 뽑을 수 있어요</div>
+      </div>
+      <button id="startBtn" class="btn btn-primary">오늘의 카드 뽑기</button>
+      <button id="viewTodayBtn" class="btn btn-secondary" style="display:none">오늘의 카드 다시 보기</button>
+    </section>
+
+    <!-- 카드 선택 화면 -->
+    <section id="pickScreen" class="screen">
+      <div class="pick-header">
+        <h2 class="pick-title">카드를 선택해주세요</h2>
+        <p class="pick-sub">직감을 믿고 마음이 이끄는 카드를 골라보세요</p>
+      </div>
+      <div class="fan-container" id="fanContainer">
+        <div class="fan-stage" id="fanStage"></div>
+      </div>
+    </section>
+
+    <!-- 결과 화면 -->
+    <section id="resultScreen" class="screen">
+      <div class="result-card-icon" id="resultCardIcon"></div>
+      <div class="result-roman" id="cardRoman"></div>
+      <div class="result-name" id="cardName"></div>
+      <div class="result-english" id="cardEnglish"></div>
+      <div class="result-box">
+        <p class="short-reading" id="shortReading"></p>
+        <div class="detail-reading" id="detailReading"></div>
+      </div>
+      <button id="detailBtn" class="btn btn-gold">상세 해석 보기</button>
+      <div class="banner-wrap" id="bannerWrap">광고 영역</div>
+      <button id="shareBtn" class="btn btn-secondary">공유하기</button>
+      <button id="rePickBtn" class="btn btn-secondary">다시 뽑기</button>
+      <button id="homeBtn" class="btn btn-secondary">메인으로 돌아가기</button>
+    </section>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const CARDS = [
+      {id:0,roman:"0",svg:"<svg viewBox=\"0 0 90 120\" xmlns=\"http://www.w3.org/2000/svg\"> <circle cx=\"45\" cy=\"38\" r=\"14\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"1.5\"/> <path d=\"M45 24 L45 52 M31 38 L59 38\" stroke=\"#f59e0b\" stroke-width=\"1\" stroke-dasharray=\"2,2\"/> <path d=\"M36 30 Q45 20 54 30\" fill=\"none\" stroke=\"#a78bfa\" stroke-width=\"1.5\" stroke-linecap=\"round\"/> <circle cx=\"29\" cy=\"50\" r=\"3\" fill=\"#f59e0b\" opacity=\"0.7\"/> <circle cx=\"61\" cy=\"26\" r=\"2\" fill=\"#a78bfa\" opacity=\"0.7\"/> <path d=\"M32 62 Q45 55 58 62 Q63 72 58 79 Q45 85 32 79 Q27 72 32 62Z\" fill=\"none\" stroke=\"#a78bfa\" stroke-width=\"1.2\"/> <circle cx=\"45\" cy=\"71\" r=\"4\" fill=\"#7c3aed\" opacity=\"0.8\"/> </svg>",name:"바보",en:"The Fool",s:"새로운 만남이 시작될 준비가 됐어요",d:"지금 이 순간, 당신은 사랑에 있어 완전히 새로운 출발점에 서 있어요. 두려움 없이 마음을 열면 예상치 못한 곳에서 설레는 인연이 찾아올 수 있어요. 지금은 과거의 상처나 실패를 내려놓고 순수한 마음으로 상대를 바라볼 때예요. 자유롭고 가볍게, 지금 느끼는 감정에 솔직해져 보세요."},
+      {id:1,roman:"I",svg:"<svg viewBox=\"0 0 90 120\" xmlns=\"http://www.w3.org/2000/svg\"> <line x1=\"45\" y1=\"20\" x2=\"45\" y2=\"85\" stroke=\"#f59e0b\" stroke-width=\"2\" stroke-linecap=\"round\"/> <path d=\"M35 32 L55 32\" stroke=\"#a78bfa\" stroke-width=\"1.5\" stroke-linecap=\"round\"/> <circle cx=\"45\" cy=\"22\" r=\"5\" fill=\"#f59e0b\" opacity=\"0.9\"/> <path d=\"M33 50 Q28 60 33 70\" fill=\"none\" stroke=\"#a78bfa\" stroke-width=\"1.2\" stroke-linecap=\"round\"/> <path d=\"M57 50 Q62 60 57 70\" fill=\"none\" stroke=\"#a78bfa\" stroke-width=\"1.2\" stroke-linecap=\"round\"/> <circle cx=\"37\" cy=\"72\" r=\"4\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"1.2\"/> <circle cx=\"53\" cy=\"72\" r=\"4\" fill=\"none\" stroke=\"#a78bfa\" stroke-width=\"1.2\"/> <path d=\"M38 45 L45 38 L52 45\" fill=\"none\" stroke=\"#fcd34d\" stroke-width=\"1.2\" stroke-linecap=\"round\"/> </svg>",name:"마법사",en:"The Magician",s:"당신에게 필요한 모든 매력이 지금 빛나고 있어요",d:"오늘은 당신의 매력이 최고조에 달하는 날이에요. 말 한마디, 눈빛 하나가 상대의 마음을 움직일 수 있어요. 좋아하는 사람이 있다면 오늘이 바로 행동할 타이밍이에요. 자신감을 갖고 적극적으로 다가가면 원하는 결과를 얻을 수 있어요. 당신 안에 있는 매력을 충분히 믿어보세요."},
+      {id:2,roman:"II",svg:"<svg viewBox=\"0 0 90 120\" xmlns=\"http://www.w3.org/2000/svg\"> <path d=\"M25 80 Q25 30 45 25 Q65 30 65 80\" fill=\"none\" stroke=\"#a78bfa\" stroke-width=\"1.5\"/> <path d=\"M32 80 Q32 38 45 34 Q58 38 58 80\" fill=\"none\" stroke=\"rgba(167,139,250,0.3)\" stroke-width=\"1\"/> <circle cx=\"45\" cy=\"45\" r=\"8\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"1.5\"/> <circle cx=\"45\" cy=\"45\" r=\"3\" fill=\"#f59e0b\" opacity=\"0.8\"/> <path d=\"M28 65 L62 65\" stroke=\"rgba(167,139,250,0.4)\" stroke-width=\"0.8\" stroke-dasharray=\"3,3\"/> <circle cx=\"28\" cy=\"80\" r=\"4\" fill=\"#a78bfa\" opacity=\"0.6\"/> <circle cx=\"62\" cy=\"80\" r=\"4\" fill=\"#a78bfa\" opacity=\"0.6\"/> </svg>",name:"여사제",en:"The High Priestess",s:"지금은 느끼는 대로 믿어보세요",d:"상대방에 대해 뭔가 직감적으로 느끼는 게 있다면, 그 감각을 무시하지 마세요. 오늘은 이성보다 감성이 더 정확한 날이에요. 아직 드러나지 않은 감정이나 숨겨진 마음이 있을 수 있어요. 서두르지 말고 조용히 상대의 행동을 관찰하면서 진심을 파악해보세요."},
+      {id:3,roman:"III",svg:"<svg viewBox=\"0 0 90 120\" xmlns=\"http://www.w3.org/2000/svg\"> <ellipse cx=\"45\" cy=\"55\" rx=\"22\" ry=\"28\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"1.5\"/> <ellipse cx=\"45\" cy=\"55\" rx=\"15\" ry=\"20\" fill=\"none\" stroke=\"rgba(245,158,11,0.3)\" stroke-width=\"1\"/> <path d=\"M33 42 Q45 32 57 42\" fill=\"none\" stroke=\"#fcd34d\" stroke-width=\"1.5\" stroke-linecap=\"round\"/> <circle cx=\"45\" cy=\"55\" r=\"6\" fill=\"#f59e0b\" opacity=\"0.7\"/> <path d=\"M39 65 Q45 72 51 65\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"1.2\" stroke-linecap=\"round\"/> <circle cx=\"30\" cy=\"55\" r=\"2\" fill=\"#fcd34d\" opacity=\"0.6\"/> <circle cx=\"60\" cy=\"55\" r=\"2\" fill=\"#fcd34d\" opacity=\"0.6\"/> </svg>",name:"여황제",en:"The Empress",s:"사랑받을 준비가 충분히 됐어요",d:"지금 당신은 사랑스럽고 따뜻한 에너지로 가득 차 있어요. 주변 사람들이 당신에게 끌리고 있을 가능성이 높아요. 연애 중이라면 관계가 더욱 풍요롭고 안정적으로 발전할 수 있는 시기예요. 솔로라면 자신을 가꾸고 사랑하는 것이 최고의 연애 준비가 돼요."},
+      {id:4,roman:"IV",svg:"<svg viewBox=\"0 0 90 120\" xmlns=\"http://www.w3.org/2000/svg\"> <rect x=\"28\" y=\"28\" width=\"34\" height=\"55\" rx=\"3\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"1.5\"/> <path d=\"M38 28 L38 20 L52 20 L52 28\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"1.2\" stroke-linecap=\"round\"/> <circle cx=\"45\" cy=\"50\" r=\"8\" fill=\"none\" stroke=\"#a78bfa\" stroke-width=\"1.5\"/> <path d=\"M41 50 L45 46 L49 50 L45 54Z\" fill=\"#a78bfa\" opacity=\"0.7\"/> <path d=\"M32 65 L58 65\" stroke=\"rgba(245,158,11,0.4)\" stroke-width=\"0.8\" stroke-dasharray=\"2,2\"/> <circle cx=\"35\" cy=\"72\" r=\"3\" fill=\"#f59e0b\" opacity=\"0.5\"/> <circle cx=\"55\" cy=\"72\" r=\"3\" fill=\"#f59e0b\" opacity=\"0.5\"/> </svg>",name:"황제",en:"The Emperor",s:"안정적이고 든든한 사랑이 다가오고 있어요",d:"오늘은 신뢰와 안정을 바탕으로 한 사랑의 기운이 강해요. 가볍고 일시적인 감정보다 진지하고 믿음직한 관계를 원하게 되는 날이에요. 연애 중이라면 서로에 대한 신뢰를 쌓을 수 있는 좋은 기회예요."},
+      {id:5,roman:"V",svg:"<svg viewBox=\"0 0 90 120\" xmlns=\"http://www.w3.org/2000/svg\"> <path d=\"M45 22 L45 85\" stroke=\"#a78bfa\" stroke-width=\"2\" stroke-linecap=\"round\"/> <path d=\"M32 38 Q45 30 58 38\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"1.5\" stroke-linecap=\"round\"/> <path d=\"M32 52 Q45 44 58 52\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"1.2\" stroke-linecap=\"round\" opacity=\"0.6\"/> <circle cx=\"45\" cy=\"25\" r=\"6\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"1.5\"/> <path d=\"M42 25 L45 22 L48 25\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"1.2\"/> <circle cx=\"32\" cy=\"68\" r=\"5\" fill=\"none\" stroke=\"#a78bfa\" stroke-width=\"1.2\"/> <circle cx=\"58\" cy=\"68\" r=\"5\" fill=\"none\" stroke=\"#a78bfa\" stroke-width=\"1.2\"/> <path d=\"M37 68 L53 68\" stroke=\"rgba(167,139,250,0.3)\" stroke-width=\"0.8\"/> </svg>",name:"교황",en:"The Hierophant",s:"진심 어린 약속이 관계를 더 깊게 만들어요",d:"오늘은 관계에서 진지함과 헌신이 중요해지는 날이에요. 가볍게 시작된 감정이 더 깊은 단계로 발전할 수 있어요. 서로의 가치관을 나누고 미래에 대한 이야기를 해보는 것도 좋아요."},
+      {id:6,roman:"VI",svg:"<svg viewBox=\"0 0 90 120\" xmlns=\"http://www.w3.org/2000/svg\"> <path d=\"M30 72 Q45 48 60 72\" fill=\"none\" stroke=\"#f43f5e\" stroke-width=\"2\" stroke-linecap=\"round\"/> <circle cx=\"33\" cy=\"72\" r=\"8\" fill=\"#1a0a2e\" stroke=\"#f43f5e\" stroke-width=\"1.5\"/> <circle cx=\"57\" cy=\"72\" r=\"8\" fill=\"#1a0a2e\" stroke=\"#7c3aed\" stroke-width=\"1.5\"/> <path d=\"M33 72 L33 65 M36 69 L30 69\" stroke=\"#f43f5e\" stroke-width=\"1.2\" stroke-linecap=\"round\"/> <path d=\"M57 72 L57 65 M60 69 L54 69\" stroke=\"#7c3aed\" stroke-width=\"1.2\" stroke-linecap=\"round\"/> <path d=\"M41 52 L45 40 L49 52 L45 49Z\" fill=\"#f59e0b\" opacity=\"0.9\"/> <path d=\"M39 55 L45 44 L51 55\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"1\" stroke-linecap=\"round\"/> </svg>",name:"연인",en:"The Lovers",s:"오늘은 사랑의 기운이 가장 강한 날이에요",d:"타로 카드 중 가장 강력한 연애운의 카드예요. 오늘은 감정에 솔직해질 수 있는 완벽한 날이에요. 고백, 데이트 신청, 중요한 감정 표현 모두 오늘이 최적의 타이밍이에요. 마음이 이끄는 대로 움직여 보세요."},
+      {id:7,roman:"VII",svg:"<svg viewBox=\"0 0 90 120\" xmlns=\"http://www.w3.org/2000/svg\"> <rect x=\"25\" y=\"50\" width=\"40\" height=\"32\" rx=\"3\" fill=\"none\" stroke=\"#a78bfa\" stroke-width=\"1.5\"/> <path d=\"M25 58 L65 58\" stroke=\"rgba(167,139,250,0.4)\" stroke-width=\"0.8\"/> <circle cx=\"35\" cy=\"40\" r=\"8\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"1.5\"/> <circle cx=\"55\" cy=\"40\" r=\"8\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"1.5\"/> <path d=\"M43 40 L47 40\" stroke=\"#f59e0b\" stroke-width=\"1.5\" stroke-linecap=\"round\"/> <path d=\"M40 25 L45 18 L50 25\" fill=\"none\" stroke=\"#fcd34d\" stroke-width=\"1.5\" stroke-linecap=\"round\"/> <circle cx=\"45\" cy=\"65\" r=\"5\" fill=\"#7c3aed\" opacity=\"0.7\"/> <path d=\"M42 65 L45 62 L48 65 L45 68Z\" fill=\"#a78bfa\" opacity=\"0.8\"/> </svg>",name:"전차",en:"The Chariot",s:"원하는 사랑을 향해 당당하게 나아가세요",d:"오늘은 연애에 있어 강한 의지와 추진력이 느껴지는 날이에요. 주저했던 감정을 표현하거나 첫 발을 내딛기에 좋은 타이밍이에요. 자신감을 갖고 원하는 것을 향해 나아가세요."},
+      {id:8,roman:"VIII",svg:"<svg viewBox=\"0 0 90 120\" xmlns=\"http://www.w3.org/2000/svg\"> <path d=\"M28 55 Q28 30 45 28 Q62 30 62 55 Q62 75 45 82 Q28 75 28 55Z\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"1.5\"/> <path d=\"M35 52 Q35 36 45 34 Q55 36 55 52 Q55 66 45 72 Q35 66 35 52Z\" fill=\"none\" stroke=\"rgba(245,158,11,0.3)\" stroke-width=\"1\"/> <circle cx=\"45\" cy=\"52\" r=\"7\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"1.5\"/> <path d=\"M41 52 L45 48 L49 52 L45 56Z\" fill=\"#f59e0b\" opacity=\"0.8\"/> <circle cx=\"33\" cy=\"38\" r=\"3\" fill=\"#a78bfa\" opacity=\"0.5\"/> <circle cx=\"57\" cy=\"38\" r=\"3\" fill=\"#a78bfa\" opacity=\"0.5\"/> </svg>",name:"힘",en:"Strength",s:"부드러운 용기가 마음을 움직여요",d:"오늘은 강압이나 조급함보다 따뜻함과 인내로 상대의 마음을 얻을 수 있는 날이에요. 갈등이 있다면 강하게 맞서기보다 부드럽게 대화로 풀어가 보세요. 내면의 강함이 오늘의 가장 큰 매력이에요."},
+      {id:9,roman:"IX",svg:"<svg viewBox=\"0 0 90 120\" xmlns=\"http://www.w3.org/2000/svg\"> <path d=\"M45 22 L45 80\" stroke=\"#a78bfa\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-dasharray=\"3,3\"/> <circle cx=\"45\" cy=\"38\" r=\"12\" fill=\"none\" stroke=\"#a78bfa\" stroke-width=\"1.5\"/> <circle cx=\"45\" cy=\"38\" r=\"5\" fill=\"#a78bfa\" opacity=\"0.4\"/> <path d=\"M38 50 Q32 60 35 72\" fill=\"none\" stroke=\"rgba(167,139,250,0.4)\" stroke-width=\"1\" stroke-linecap=\"round\"/> <path d=\"M52 50 Q58 60 55 72\" fill=\"none\" stroke=\"rgba(167,139,250,0.4)\" stroke-width=\"1\" stroke-linecap=\"round\"/> <circle cx=\"35\" cy=\"75\" r=\"3\" fill=\"#a78bfa\" opacity=\"0.4\"/> <circle cx=\"55\" cy=\"75\" r=\"3\" fill=\"#a78bfa\" opacity=\"0.4\"/> <path d=\"M38 82 Q45 78 52 82\" fill=\"none\" stroke=\"rgba(167,139,250,0.3)\" stroke-width=\"1\" stroke-linecap=\"round\"/> </svg>",name:"은둔자",en:"The Hermit",s:"혼자만의 시간이 더 좋은 사랑을 준비시켜줘요",d:"오늘은 연애보다 자기 자신에게 집중하는 것이 더 중요한 날일 수 있어요. 지금 느끼는 감정이 진짜인지 돌아보는 시간을 가져보세요. 자신을 깊이 이해할수록 더 건강한 사랑을 할 수 있어요."},
+      {id:10,roman:"X",svg:"<svg viewBox=\"0 0 90 120\" xmlns=\"http://www.w3.org/2000/svg\"> <circle cx=\"45\" cy=\"52\" r=\"24\" fill=\"none\" stroke=\"#a78bfa\" stroke-width=\"1.5\"/> <circle cx=\"45\" cy=\"52\" r=\"16\" fill=\"none\" stroke=\"rgba(167,139,250,0.3)\" stroke-width=\"1\"/> <circle cx=\"45\" cy=\"52\" r=\"6\" fill=\"#7c3aed\" opacity=\"0.7\"/> <path d=\"M45 28 L47 35 L45 33 L43 35Z\" fill=\"#f59e0b\"/> <path d=\"M45 76 L47 69 L45 71 L43 69Z\" fill=\"#f59e0b\"/> <path d=\"M21 52 L28 50 L26 52 L28 54Z\" fill=\"#f59e0b\"/> <path d=\"M69 52 L62 50 L64 52 L62 54Z\" fill=\"#f59e0b\"/> <circle cx=\"34\" cy=\"36\" r=\"3\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"1\"/> <circle cx=\"56\" cy=\"68\" r=\"3\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"1\"/> </svg>",name:"운명의 바퀴",en:"Wheel of Fortune",s:"운명적인 만남이나 변화가 찾아올 수 있어요",d:"오늘은 예상치 못한 곳에서 특별한 인연이 찾아올 수 있는 날이에요. 우연처럼 보이는 만남이 사실은 운명일 수 있어요. 변화를 두려워하지 말고 흐름에 몸을 맡겨보세요."},
+      {id:11,roman:"XI",svg:"<svg viewBox=\"0 0 90 120\" xmlns=\"http://www.w3.org/2000/svg\"> <path d=\"M45 22 L45 85\" stroke=\"#a78bfa\" stroke-width=\"1.5\" stroke-linecap=\"round\"/> <path d=\"M30 38 L60 38\" stroke=\"#f59e0b\" stroke-width=\"1.5\" stroke-linecap=\"round\"/> <circle cx=\"30\" cy=\"38\" r=\"5\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"1.2\"/> <circle cx=\"60\" cy=\"38\" r=\"5\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"1.2\"/> <path d=\"M38 52 L52 52\" stroke=\"rgba(245,158,11,0.5)\" stroke-width=\"1\" stroke-linecap=\"round\"/> <path d=\"M36 60 L54 60\" stroke=\"rgba(245,158,11,0.3)\" stroke-width=\"1\" stroke-linecap=\"round\"/> <circle cx=\"45\" cy=\"72\" r=\"7\" fill=\"none\" stroke=\"#a78bfa\" stroke-width=\"1.5\"/> <path d=\"M42 72 L45 69 L48 72 L45 75Z\" fill=\"#a78bfa\" opacity=\"0.8\"/> </svg>",name:"정의",en:"Justice",s:"솔직한 감정이 관계의 균형을 만들어요",d:"오늘은 감정에 솔직하고 공정한 태도가 중요한 날이에요. 한쪽만 노력하는 관계라면 균형을 찾아야 할 때예요. 진실은 언제나 관계를 더 단단하게 해줘요."},
+      {id:12,roman:"XII",svg:"<svg viewBox=\"0 0 90 120\" xmlns=\"http://www.w3.org/2000/svg\"> <line x1=\"30\" y1=\"28\" x2=\"60\" y2=\"28\" stroke=\"#a78bfa\" stroke-width=\"1.5\" stroke-linecap=\"round\"/> <circle cx=\"45\" cy=\"28\" r=\"4\" fill=\"#a78bfa\" opacity=\"0.6\"/> <path d=\"M45 28 L45 75\" stroke=\"#a78bfa\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-dasharray=\"3,3\"/> <circle cx=\"45\" cy=\"80\" r=\"10\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"1.5\"/> <circle cx=\"45\" cy=\"80\" r=\"4\" fill=\"#f59e0b\" opacity=\"0.5\"/> <path d=\"M36 56 Q30 66 35 72\" fill=\"none\" stroke=\"rgba(167,139,250,0.4)\" stroke-width=\"1\" stroke-linecap=\"round\"/> <path d=\"M54 56 Q60 66 55 72\" fill=\"none\" stroke=\"rgba(167,139,250,0.4)\" stroke-width=\"1\" stroke-linecap=\"round\"/> </svg>",name:"매달린 사람",en:"The Hanged Man",s:"잠시 멈추고 바라보면 새로운 감정이 보여요",d:"오늘은 연애에서 잠시 한 발 물러서서 상황을 다르게 바라볼 필요가 있어요. 조급하게 결론을 내리기보다 기다리는 것이 더 나은 결과를 가져올 수 있어요."},
+      {id:13,roman:"XIII",svg:"<svg viewBox=\"0 0 90 120\" xmlns=\"http://www.w3.org/2000/svg\"> <path d=\"M22 82 Q45 20 68 82\" fill=\"none\" stroke=\"#a78bfa\" stroke-width=\"1.5\" stroke-linecap=\"round\"/> <path d=\"M35 65 Q45 38 55 65\" fill=\"none\" stroke=\"rgba(167,139,250,0.3)\" stroke-width=\"1\" stroke-linecap=\"round\"/> <circle cx=\"45\" cy=\"68\" r=\"8\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"1.5\"/> <path d=\"M41 68 L45 64 L49 68 L45 72Z\" fill=\"#f59e0b\" opacity=\"0.7\"/> <circle cx=\"30\" cy=\"38\" r=\"4\" fill=\"#a78bfa\" opacity=\"0.3\"/> <circle cx=\"60\" cy=\"45\" r=\"3\" fill=\"#a78bfa\" opacity=\"0.3\"/> <path d=\"M25 82 L65 82\" stroke=\"rgba(167,139,250,0.3)\" stroke-width=\"0.8\" stroke-dasharray=\"2,2\"/> </svg>",name:"죽음",en:"Death",s:"끝이 아니라 새로운 사랑의 시작이에요",d:"죽음 카드는 실제 죽음이 아닌 변화와 새로운 시작을 의미해요. 지금 끝나가는 관계나 감정이 있다면 억지로 붙잡기보다 자연스럽게 흘려보내세요. 하나가 끝나야 더 좋은 것이 시작될 수 있어요."},
+      {id:14,roman:"XIV",svg:"<svg viewBox=\"0 0 90 120\" xmlns=\"http://www.w3.org/2000/svg\"> <circle cx=\"32\" cy=\"52\" r=\"14\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"1.5\"/> <circle cx=\"58\" cy=\"52\" r=\"14\" fill=\"none\" stroke=\"#a78bfa\" stroke-width=\"1.5\"/> <path d=\"M38 44 Q45 35 52 44\" fill=\"none\" stroke=\"#fcd34d\" stroke-width=\"1.5\" stroke-linecap=\"round\"/> <path d=\"M38 60 Q45 69 52 60\" fill=\"none\" stroke=\"#a78bfa\" stroke-width=\"1.2\" stroke-linecap=\"round\"/> <path d=\"M36 52 L54 52\" stroke=\"rgba(255,255,255,0.2)\" stroke-width=\"2\"/> <circle cx=\"32\" cy=\"52\" r=\"4\" fill=\"#f59e0b\" opacity=\"0.5\"/> <circle cx=\"58\" cy=\"52\" r=\"4\" fill=\"#a78bfa\" opacity=\"0.5\"/> </svg>",name:"절제",en:"Temperance",s:"천천히 균형 있게 쌓아가는 사랑이 오래가요",d:"오늘은 감정을 너무 급하게 표현하거나 관계를 서두르지 않는 게 좋아요. 조화롭고 균형 잡힌 접근이 상대의 마음을 더 편안하게 열게 해요."},
+      {id:15,roman:"XV",svg:"<svg viewBox=\"0 0 90 120\" xmlns=\"http://www.w3.org/2000/svg\"> <path d=\"M25 82 L45 30 L65 82Z\" fill=\"none\" stroke=\"#f43f5e\" stroke-width=\"1.5\" stroke-linejoin=\"round\"/> <circle cx=\"45\" cy=\"55\" r=\"10\" fill=\"none\" stroke=\"#f43f5e\" stroke-width=\"1.2\"/> <path d=\"M41 55 L45 51 L49 55 L45 59Z\" fill=\"#f43f5e\" opacity=\"0.7\"/> <path d=\"M34 72 Q34 82 40 82\" fill=\"none\" stroke=\"rgba(244,63,94,0.5)\" stroke-width=\"1\" stroke-linecap=\"round\"/> <path d=\"M56 72 Q56 82 50 82\" fill=\"none\" stroke=\"rgba(244,63,94,0.5)\" stroke-width=\"1\" stroke-linecap=\"round\"/> <circle cx=\"37\" cy=\"40\" r=\"3\" fill=\"#f43f5e\" opacity=\"0.4\"/> <circle cx=\"53\" cy=\"40\" r=\"3\" fill=\"#f43f5e\" opacity=\"0.4\"/> </svg>",name:"악마",en:"The Devil",s:"집착보다 자유로운 사랑이 더 깊어져요",d:"오늘은 관계에서 집착이나 의존이 문제가 되고 있지 않은지 돌아봐야 해요. 서로를 묶는 것이 아닌 자유롭게 선택하는 관계가 더 건강해요."},
+      {id:16,roman:"XVI",svg:"<svg viewBox=\"0 0 90 120\" xmlns=\"http://www.w3.org/2000/svg\"> <rect x=\"30\" y=\"25\" width=\"30\" height=\"50\" rx=\"3\" fill=\"none\" stroke=\"#a78bfa\" stroke-width=\"1.5\"/> <path d=\"M30 38 L60 38\" stroke=\"rgba(167,139,250,0.4)\" stroke-width=\"0.8\"/> <path d=\"M38 25 L38 20 L52 20 L52 25\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"1.2\" stroke-linecap=\"round\"/> <path d=\"M35 55 Q30 65 25 72\" fill=\"none\" stroke=\"#f43f5e\" stroke-width=\"1.5\" stroke-linecap=\"round\"/> <path d=\"M55 55 Q60 65 65 72\" fill=\"none\" stroke=\"#f43f5e\" stroke-width=\"1.5\" stroke-linecap=\"round\"/> <circle cx=\"25\" cy=\"74\" r=\"3\" fill=\"#f43f5e\" opacity=\"0.7\"/> <circle cx=\"65\" cy=\"74\" r=\"3\" fill=\"#f43f5e\" opacity=\"0.7\"/> <path d=\"M42 42 L48 48 M48 42 L42 48\" stroke=\"#f59e0b\" stroke-width=\"1.2\" stroke-linecap=\"round\"/> </svg>",name:"탑",en:"The Tower",s:"흔들려도 괜찮아요, 더 단단해질 기회예요",d:"오늘 연애에서 예상치 못한 충격이나 갈등이 생길 수 있어요. 하지만 이런 흔들림은 관계의 허약한 부분을 드러내 더 단단하게 만드는 과정이에요."},
+      {id:17,roman:"XVII",svg:"<svg viewBox=\"0 0 90 120\" xmlns=\"http://www.w3.org/2000/svg\"> <path d=\"M45 28 L47.5 35 L55 35 L49 39.5 L51.5 47 L45 42.5 L38.5 47 L41 39.5 L35 35 L42.5 35Z\" fill=\"#f59e0b\" opacity=\"0.9\"/> <circle cx=\"27\" cy=\"62\" r=\"5\" fill=\"none\" stroke=\"#a78bfa\" stroke-width=\"1.5\"/> <circle cx=\"63\" cy=\"58\" r=\"3\" fill=\"none\" stroke=\"#a78bfa\" stroke-width=\"1.2\"/> <circle cx=\"37\" cy=\"72\" r=\"2\" fill=\"#a78bfa\" opacity=\"0.5\"/> <circle cx=\"56\" cy=\"68\" r=\"4\" fill=\"none\" stroke=\"#a78bfa\" stroke-width=\"1\"/> <circle cx=\"31\" cy=\"48\" r=\"2\" fill=\"#f59e0b\" opacity=\"0.4\"/> <circle cx=\"61\" cy=\"72\" r=\"2.5\" fill=\"#a78bfa\" opacity=\"0.4\"/> <path d=\"M24 80 Q35 75 45 80 Q55 85 66 80\" fill=\"none\" stroke=\"rgba(167,139,250,0.3)\" stroke-width=\"1\" stroke-linecap=\"round\"/> </svg>",name:"별",en:"The Star",s:"희망적인 사랑의 기운이 당신을 감싸고 있어요",d:"오늘은 연애운이 매우 밝고 희망적인 날이에요. 오래 기다려온 인연이 다가오거나, 힘들었던 관계가 회복될 수 있어요. 자신을 믿고 사랑받을 자격이 있다는 것을 잊지 마세요."},
+      {id:18,roman:"XVIII",svg:"<svg viewBox=\"0 0 90 120\" xmlns=\"http://www.w3.org/2000/svg\"> <path d=\"M55 35 Q68 45 65 60 Q62 72 52 75 Q45 77 38 75 Q28 72 25 60 Q22 45 35 35\" fill=\"none\" stroke=\"#a78bfa\" stroke-width=\"1.5\" stroke-linecap=\"round\"/> <circle cx=\"45\" cy=\"45\" r=\"10\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"1.5\"/> <circle cx=\"45\" cy=\"45\" r=\"4\" fill=\"#f59e0b\" opacity=\"0.4\"/> <path d=\"M42 30 Q45 24 48 30\" fill=\"none\" stroke=\"rgba(167,139,250,0.5)\" stroke-width=\"1\" stroke-linecap=\"round\"/> <circle cx=\"32\" cy=\"68\" r=\"3\" fill=\"#a78bfa\" opacity=\"0.4\"/> <circle cx=\"58\" cy=\"68\" r=\"3\" fill=\"#a78bfa\" opacity=\"0.4\"/> <path d=\"M30 78 Q45 84 60 78\" fill=\"none\" stroke=\"rgba(167,139,250,0.3)\" stroke-width=\"1\" stroke-linecap=\"round\"/> </svg>",name:"달",en:"The Moon",s:"불확실한 감정 속에서 진심을 찾아보세요",d:"오늘은 감정이 흔들리거나 상대의 마음을 파악하기 어려울 수 있어요. 혼란스러운 상황일수록 자신의 진심에 집중하는 것이 중요해요."},
+      {id:19,roman:"XIX",svg:"<svg viewBox=\"0 0 90 120\" xmlns=\"http://www.w3.org/2000/svg\"> <circle cx=\"45\" cy=\"50\" r=\"20\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"2\"/> <circle cx=\"45\" cy=\"50\" r=\"12\" fill=\"none\" stroke=\"rgba(245,158,11,0.3)\" stroke-width=\"1\"/> <circle cx=\"45\" cy=\"50\" r=\"6\" fill=\"#f59e0b\" opacity=\"0.9\"/> <path d=\"M45 26 L45 20 M45 74 L45 80 M21 50 L15 50 M69 50 L75 50\" stroke=\"#f59e0b\" stroke-width=\"1.5\" stroke-linecap=\"round\"/> <path d=\"M28 33 L24 29 M62 67 L66 71 M28 67 L24 71 M62 33 L66 29\" stroke=\"#f59e0b\" stroke-width=\"1.2\" stroke-linecap=\"round\"/> <path d=\"M45 26 L46.5 30 L45 29 L43.5 30Z\" fill=\"#fcd34d\"/> <path d=\"M45 74 L46.5 70 L45 71 L43.5 70Z\" fill=\"#fcd34d\"/> </svg>",name:"태양",en:"The Sun",s:"오늘은 사랑이 가장 밝게 빛나는 날이에요",d:"오늘은 연애운이 최고조에 달하는 날이에요. 솔로라면 밝고 활기찬 에너지가 좋은 인연을 끌어당겨요. 오늘 당신은 누구보다 빛나고 있어요."},
+      {id:20,roman:"XX",svg:"<svg viewBox=\"0 0 90 120\" xmlns=\"http://www.w3.org/2000/svg\"> <path d=\"M22 75 Q22 35 45 28 Q68 35 68 75\" fill=\"none\" stroke=\"#a78bfa\" stroke-width=\"1.5\"/> <path d=\"M32 75 Q32 42 45 36 Q58 42 58 75\" fill=\"none\" stroke=\"rgba(167,139,250,0.3)\" stroke-width=\"1\"/> <path d=\"M35 58 Q45 48 55 58\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"1.5\" stroke-linecap=\"round\"/> <circle cx=\"45\" cy=\"42\" r=\"7\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"1.5\"/> <path d=\"M42 42 L45 39 L48 42 L45 45Z\" fill=\"#f59e0b\" opacity=\"0.8\"/> <path d=\"M28 75 L62 75\" stroke=\"rgba(167,139,250,0.3)\" stroke-width=\"0.8\" stroke-dasharray=\"2,2\"/> <circle cx=\"35\" cy=\"68\" r=\"3\" fill=\"#a78bfa\" opacity=\"0.4\"/> <circle cx=\"55\" cy=\"68\" r=\"3\" fill=\"#a78bfa\" opacity=\"0.4\"/> </svg>",name:"심판",en:"Judgement",s:"다시 시작할 용기가 생기는 날이에요",d:"오늘은 과거의 관계나 감정을 정리하고 새롭게 시작할 수 있는 기운이 강해요. 두려움을 내려놓고 다시 한번 도전해보세요."},
+      {id:21,roman:"XXI",svg:"<svg viewBox=\"0 0 90 120\" xmlns=\"http://www.w3.org/2000/svg\"> <ellipse cx=\"45\" cy=\"52\" rx=\"24\" ry=\"32\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"1.5\"/> <ellipse cx=\"45\" cy=\"52\" rx=\"18\" ry=\"24\" fill=\"none\" stroke=\"rgba(245,158,11,0.2)\" stroke-width=\"1\"/> <circle cx=\"45\" cy=\"52\" r=\"8\" fill=\"none\" stroke=\"#a78bfa\" stroke-width=\"1.5\"/> <path d=\"M41 52 L45 48 L49 52 L45 56Z\" fill=\"#a78bfa\" opacity=\"0.8\"/> <circle cx=\"24\" cy=\"30\" r=\"4\" fill=\"#f59e0b\" opacity=\"0.5\"/> <circle cx=\"66\" cy=\"30\" r=\"4\" fill=\"#a78bfa\" opacity=\"0.5\"/> <circle cx=\"24\" cy=\"74\" r=\"4\" fill=\"#a78bfa\" opacity=\"0.5\"/> <circle cx=\"66\" cy=\"74\" r=\"4\" fill=\"#f59e0b\" opacity=\"0.5\"/> </svg>",name:"세계",en:"The World",s:"사랑이 완성되는 아름다운 순간이 찾아와요",d:"메이저 아르카나의 마지막 카드로 완성과 성취를 의미해요. 오랫동안 원해온 사랑이 이루어지거나, 관계가 아름다운 완성 단계에 접어들 수 있어요."}
+    ];
+
+    const mainScreen = document.getElementById('mainScreen');
+    const pickScreen = document.getElementById('pickScreen');
+    const resultScreen = document.getElementById('resultScreen');
+    const startBtn = document.getElementById('startBtn');
+    const viewTodayBtn = document.getElementById('viewTodayBtn');
+    const alreadyPickedBox = document.getElementById('alreadyPickedBox');
+    const todayCardName = document.getElementById('todayCardName');
+    const todayCardReading = document.getElementById('todayCardReading');
+    const fanStage = document.getElementById('fanStage');
+    const fanContainer = document.getElementById('fanContainer');
+    const cardNameEl = document.getElementById('cardName');
+    const cardEnglishEl = document.getElementById('cardEnglish');
+    const shortReadingEl = document.getElementById('shortReading');
+    const detailReadingEl = document.getElementById('detailReading');
+    const detailBtn = document.getElementById('detailBtn');
+    const shareBtn = document.getElementById('shareBtn');
+    const toastEl = document.getElementById('toast');
+    const bannerWrap = document.getElementById('bannerWrap');
+
+    let pickedCard = null;
+    const TODAY_KEY = 'haruTarot_' + new Date().toISOString().slice(0,10);
+
+    function showScreen(s) {
+      [mainScreen, pickScreen, resultScreen].forEach(x => x.classList.remove('active'));
+      s.classList.add('active');
+    }
+
+    function showToast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      setTimeout(() => toastEl.classList.remove('show'), 2500);
+    }
+
+    // 오늘 뽑은 카드 확인
+    function checkToday() {
+      const saved = localStorage.getItem(TODAY_KEY);
+      if (saved) {
+        const c = JSON.parse(saved);
+        todayCardName.textContent = c.name + '  ·  ' + c.en;
+        todayCardReading.textContent = c.s;
+        alreadyPickedBox.style.display = 'block';
+        startBtn.style.display = 'none';
+        viewTodayBtn.style.display = 'block';
+      }
+    }
+
+    // 부채꼴 카드 렌더링
+    function renderFan() {
+      fanStage.innerHTML = '';
+      const total = CARDS.length;
+      const totalAngle = 132;
+      const startAngle = -totalAngle / 2;
+      let activeIdx = Math.floor(total / 2);
+
+      function updateActive(clientX) {
+        const rect = fanContainer.getBoundingClientRect();
+        const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+        const idx = Math.round(pct * (total - 1));
+        fanStage.querySelectorAll('.fan-card').forEach((c, i) => {
+          c.classList.toggle('active', i === idx);
+        });
+      }
+
+      CARDS.forEach((card, i) => {
+        const angle = startAngle + (totalAngle / (total - 1)) * i;
+        const el = document.createElement('button');
+        el.type = 'button';
+        el.className = 'fan-card' + (i === activeIdx ? ' active' : '');
+        el.style.transform = `rotate(${angle}deg)`;
+        el.innerHTML = `<div class="fan-card-face"><span class="star-icon">★</span></div>`;
+        el.addEventListener('click', () => onPick(i));
+        fanStage.appendChild(el);
+      });
+
+      fanContainer.addEventListener('mousemove', e => updateActive(e.clientX));
+      fanContainer.addEventListener('touchmove', e => {
+        e.preventDefault();
+        updateActive(e.touches[0].clientX);
+      }, { passive: false });
+      fanContainer.addEventListener('touchstart', e => {
+        updateActive(e.touches[0].clientX);
+      }, { passive: true });
+    }
+
+    function onPick(idx) {
+      pickedCard = CARDS[idx];
+      localStorage.setItem(TODAY_KEY, JSON.stringify(pickedCard));
+      showResult();
+    }
+
+    function showResult() {
+      if (!pickedCard) return;
+      cardNameEl.textContent = pickedCard.name;
+      cardEnglishEl.textContent = pickedCard.en;
+      document.getElementById('cardRoman').textContent = pickedCard.roman;
+      shortReadingEl.textContent = pickedCard.s;
+      detailReadingEl.textContent = pickedCard.d;
+      detailReadingEl.classList.remove('visible');
+      detailBtn.style.display = 'block';
+      // 카드 SVG 삽입 + 드로잉 애니메이션
+      const iconEl = document.getElementById('resultCardIcon');
+      if (iconEl && pickedCard.svg) {
+        iconEl.innerHTML = pickedCard.svg;
+        const svgEl = iconEl.querySelector('svg');
+        if (svgEl) {
+          const els = svgEl.querySelectorAll('path, circle, ellipse, line, rect, polyline');
+          els.forEach((el, i) => {
+            const len = el.getTotalLength ? el.getTotalLength() : 60;
+            el.style.strokeDasharray = len;
+            el.style.strokeDashoffset = len;
+            el.style.setProperty('--len', len + 'px');
+            el.style.animation = 'none';
+            const delay = i * 120;
+            const dur = el.tagName === 'circle' ? 400 : el.tagName === 'rect' ? 350 : 600;
+            setTimeout(() => {
+              el.style.transition = `stroke-dashoffset ${dur}ms ease-out`;
+              el.style.strokeDashoffset = 0;
+            }, delay + 200);
+          });
+        }
+      }
+      initBanner();
+      showScreen(resultScreen);
+    }
+
+    function initBanner() {
+      if (window.TossAds && window.TossAds.initialize.isSupported()) {
+        window.TossAds.initialize({
+          callbacks: {
+            onInitialized: function() {
+              if (window.TossAds.attachBanner.isSupported()) {
+                bannerWrap.textContent = '';
+                window.TossAds.attachBanner('ait.v2.live.5e6efd731b12486c', bannerWrap, {
+                  theme: 'auto', tone: 'grey', variant: 'expanded'
+                });
+              }
+            }
+          }
+        });
+      }
+    }
+
+    function showRewardAd() {
+      if (window.loadFullScreenAd && window.loadFullScreenAd.isSupported()) {
+        window.loadFullScreenAd({
+          options: { adGroupId: 'ait-ad-test-rewarded-id' },
+          onEvent: function(e) {
+            if (e.type === 'loaded') {
+              window.showFullScreenAd({
+                options: { adGroupId: 'ait-ad-test-rewarded-id' },
+                onEvent: function(ev) {
+                  if (ev.type === 'userEarnedReward' || ev.type === 'dismissed') {
+                    detailReadingEl.classList.add('visible');
+                    detailBtn.style.display = 'none';
+                  }
+                },
+                onError: function() {
+                  detailReadingEl.classList.add('visible');
+                  detailBtn.style.display = 'none';
+                }
+              });
+            }
+          },
+          onError: function() {
+            detailReadingEl.classList.add('visible');
+            detailBtn.style.display = 'none';
+          }
+        });
+      } else {
+        // 개발환경 fallback
+        detailReadingEl.classList.add('visible');
+        detailBtn.style.display = 'none';
+      }
+    }
+
+    startBtn.addEventListener('click', () => {
+      renderFan();
+      showScreen(pickScreen);
+    });
+
+    viewTodayBtn.addEventListener('click', () => {
+      const saved = localStorage.getItem(TODAY_KEY);
+      if (saved) {
+        pickedCard = JSON.parse(saved);
+        showResult();
+      }
+    });
+
+    detailBtn.addEventListener('click', showRewardAd);
+
+    shareBtn.addEventListener('click', async () => {
+      if (!pickedCard) return;
+      const text = `[하루타로] ${pickedCard.name}\n${pickedCard.s}`;
+      try {
+        if (navigator.share) { await navigator.share({ title: '하루타로', text }); return; }
+      } catch(_) {}
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast('결과가 복사됐어요');
+      } catch(_) { showToast('공유하기를 지원하지 않는 환경이에요'); }
+    });
+
+    document.getElementById('homeBtn').addEventListener('click', () => {
+      showScreen(mainScreen);
+    });
+
+    document.getElementById('rePickBtn').addEventListener('click', () => {
+      // 리워드 광고 보고 다시 뽑기
+      if (window.loadFullScreenAd && window.loadFullScreenAd.isSupported()) {
+        window.loadFullScreenAd({
+          options: { adGroupId: 'ait-ad-test-rewarded-id' },
+          onEvent: function(e) {
+            if (e.type === 'loaded') {
+              window.showFullScreenAd({
+                options: { adGroupId: 'ait-ad-test-rewarded-id' },
+                onEvent: function(ev) {
+                  if (ev.type === 'userEarnedReward' || ev.type === 'dismissed') {
+                    localStorage.removeItem(TODAY_KEY);
+                    pickedCard = null;
+                    renderFan();
+                    showScreen(pickScreen);
+                  }
+                },
+                onError: function() {
+                  localStorage.removeItem(TODAY_KEY);
+                  pickedCard = null;
+                  renderFan();
+                  showScreen(pickScreen);
+                }
+              });
+            }
+          },
+          onError: function() {
+            localStorage.removeItem(TODAY_KEY);
+            pickedCard = null;
+            renderFan();
+            showScreen(pickScreen);
+          }
+        });
+      } else {
+        // 개발환경 fallback
+        localStorage.removeItem(TODAY_KEY);
+        pickedCard = null;
+        renderFan();
+        showScreen(pickScreen);
+      }
+    });
+
+    checkToday();
+  </script>
+</body>
+</html>
